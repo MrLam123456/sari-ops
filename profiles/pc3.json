@@ -31,8 +31,13 @@
    "page": "n",
    "match": "ToolUpdateAIAgent|RUN-AI-AGENT|3-ToolUpdateAIAgent",
    "kind": "service",
-   "start": "START-TOOL.bat trong thư mục tool",
-   "path": ""
+   "start": "START-TOOL.bat trong Desktop/ToolUpdateAIAgent (PC 3)",
+   "path": "",
+   "log": {
+    "dir": "C:/Users/Admin/Desktop/ToolUpdateAIAgent/log",
+    "pattern": "[.]log$"
+   },
+   "staleMin": 120
   },
   {
    "id": "saripost",
@@ -41,7 +46,7 @@
    "page": "n",
    "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py|4-Sari-post|Tool_Sari_Post",
    "kind": "service",
-   "start": "Mở SariAutoPoster",
+   "start": "SariAutoPoster tự bật cùng Windows (PC 3)",
    "path": ""
   },
   {
