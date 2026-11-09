@@ -49,10 +49,10 @@
    "role": "FbPostGroup: lấy phòng từ app Sari, ghép tin theo mẫu, đăng hàng loạt vào nhóm Facebook có hẹn giờ",
    "page": "n",
    "path": "",
-   "match": "FbPostGroup",
+   "match": "FbPostGroup|Fb-POST-GROUP.node_modules.electron.dist.electron\\.exe",
    "exclude": "--type=",
    "kind": "service",
-   "start": "Mở app FbPostGroup (hẹn giờ đăng chạy khi app mở)"
+   "start": "Đang chạy bản dev: thư mục Downloads\\Fb-POST-GROUP, lệnh npm run dev"
   },
   {
    "id": "sendzalo",
@@ -64,6 +64,17 @@
    "exclude": "--type=",
    "kind": "service",
    "start": "Mở app SendMessageZalo"
+  },
+  {
+   "id": "zalosender",
+   "name": "6 · Zalo Auto Sender",
+   "role": "Gửi tin nhắn Zalo hàng loạt",
+   "page": "n",
+   "path": "",
+   "match": "Zalo Auto Sender",
+   "exclude": "--type=",
+   "kind": "ondemand",
+   "start": "Mở app Zalo Auto Sender"
   }
  ]
 }
