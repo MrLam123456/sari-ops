@@ -13,26 +13,6 @@
    "start": "Mở app SariSheet (chạy ngầm ở khay hệ thống)"
   },
   {
-   "id": "aiagent",
-   "name": "3 · AI Agent cập nhật phòng",
-   "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
-   "page": "n",
-   "path": "",
-   "match": "ToolUpdateAIAgent|RUN-AI-AGENT",
-   "kind": "service",
-   "start": "START-TOOL.bat trong thư mục tool"
-  },
-  {
-   "id": "saripost",
-   "name": "4 · Sari Post",
-   "role": "Tự đăng bài phòng Sari (SariAutoPoster, có AI viết tiêu đề)",
-   "page": "n",
-   "path": "",
-   "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py",
-   "kind": "service",
-   "start": "Mở SariAutoPoster"
-  },
-  {
    "id": "autofb",
    "name": "5 · AutoFB bình luận",
    "role": "Comment / reply hàng loạt trong nhóm Facebook theo từ khoá, nhiều tài khoản",
