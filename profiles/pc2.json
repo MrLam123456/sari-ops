@@ -1,0 +1,69 @@
+{
+ "note": "Mỗi tool = 1 nhân viên trong Phòng Vận hành. match = biểu thức tìm trong dòng lệnh tiến trình; task = tên tác vụ Task Scheduler; log = file log hoặc {dir, pattern}; path = nơi cài trên máy này (không có = chưa cài); kind = service (phải chạy 24/7) | ondemand (chạy khi cần) | cloud (chạy trên Google, máy không theo dõi được); staleMin = số phút không ghi log thì coi là im lặng.",
+ "tools": [
+  {
+   "id": "sarisheet",
+   "name": "2 · SariSheet",
+   "role": "Quét tin nhắn nhóm Zalo, nhận diện phòng còn trống, cập nhật trạng thái và giá lên Google Sheet mỗi ngày",
+   "page": "n",
+   "path": "",
+   "match": "SariSheet",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app SariSheet (chạy ngầm ở khay hệ thống)"
+  },
+  {
+   "id": "aiagent",
+   "name": "3 · AI Agent cập nhật phòng",
+   "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
+   "page": "n",
+   "path": "",
+   "match": "ToolUpdateAIAgent|RUN-AI-AGENT",
+   "kind": "service",
+   "start": "START-TOOL.bat trong thư mục tool"
+  },
+  {
+   "id": "saripost",
+   "name": "4 · Sari Post",
+   "role": "Tự đăng bài phòng Sari (SariAutoPoster, có AI viết tiêu đề)",
+   "page": "n",
+   "path": "",
+   "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py",
+   "kind": "service",
+   "start": "Mở SariAutoPoster"
+  },
+  {
+   "id": "autofb",
+   "name": "5 · AutoFB bình luận",
+   "role": "Comment / reply hàng loạt trong nhóm Facebook theo từ khoá, nhiều tài khoản",
+   "page": "n",
+   "path": "",
+   "match": "AutoFB",
+   "exclude": "--type=",
+   "kind": "ondemand",
+   "start": "Mở app AutoFB, chọn tài khoản và bấm Run"
+  },
+  {
+   "id": "fbpostgroup",
+   "name": "10+ · Đăng bài lên nhóm FB",
+   "role": "FbPostGroup: lấy phòng từ app Sari, ghép tin theo mẫu, đăng hàng loạt vào nhóm Facebook có hẹn giờ",
+   "page": "n",
+   "path": "",
+   "match": "FbPostGroup",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app FbPostGroup (hẹn giờ đăng chạy khi app mở)"
+  },
+  {
+   "id": "sendzalo",
+   "name": "10 · Gửi phòng qua Zalo",
+   "role": "SendMessageZalo: lấy phòng từ app Sari, gửi tin theo mẫu vào Zalo",
+   "page": "n",
+   "path": "",
+   "match": "SendMessageZalo",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app SendMessageZalo"
+  }
+ ]
+}
