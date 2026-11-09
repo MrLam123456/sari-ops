@@ -1,6 +1,7 @@
 # Sari Ops - cai may theo doi Phong Van hanh len 1 PC
 # Chay trong PowerShell:
 #   irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
+# Danh sach tool cua may tu cap nhat tu profiles/<bo tool>.json moi 10 phut.
 # Doi ten may / bo tool (tuy chon):
 #   $env:SARI_MAY='PC 3'; $env:SARI_PROFILE='pc2'; irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
 $ErrorActionPreference = 'Stop'
@@ -28,9 +29,8 @@ Write-Host "[3/6] Tai file ve $dest ..."
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Invoke-WebRequest "$base/ops-server.js"        -OutFile (Join-Path $dest 'ops-server.js') -UseBasicParsing
 Invoke-WebRequest "$base/Sari%20Ops.vbs"       -OutFile (Join-Path $dest 'Sari Ops.vbs')  -UseBasicParsing
-if (-not (Test-Path (Join-Path $dest 'tools.json'))) {
-  Invoke-WebRequest "$base/profiles/$prof.json" -OutFile (Join-Path $dest 'tools.json') -UseBasicParsing
-}
+Invoke-WebRequest "$base/profiles/$prof.json" -OutFile (Join-Path $dest 'tools.json') -UseBasicParsing
+[IO.File]::WriteAllText((Join-Path $dest 'profile.txt'), $prof, (New-Object Text.UTF8Encoding $false))
 [IO.File]::WriteAllText((Join-Path $dest 'machine.txt'), $may, (New-Object Text.UTF8Encoding $false))
 
 Write-Host '[4/6] Tu bat cung Windows...'

@@ -47,14 +47,14 @@ async function scanPeers(cfg) {
   for (const t of targets) {
     const d = t.online === false ? null : await getJson(t.url + "/status?local=1", 5000);
     const prev = peerData[t.key];
-    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: d.host || t.name, url: t.url, tools: d.tools, known: true };
+    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, known: true };
     else if (prev && prev.known) peerData[t.key] = { ...prev, ok: false };   // từng kết nối, giờ mất
     else delete peerData[t.key];                                             // PC chưa cài Sari Ops: bỏ qua
   }
 }
 
 async function scanProcs() {
-  const out = await ps("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine } | Select-Object ProcessId,Name,CommandLine,@{n='Start';e={ if($_.CreationDate){ $_.CreationDate.ToString('o') } }} | ConvertTo-Json -Compress");
+  const out = await ps("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine } | Select-Object ProcessId,Name,CommandLine,ExecutablePath,@{n='Start';e={ if($_.CreationDate){ $_.CreationDate.ToString('o') } }} | ConvertTo-Json -Compress");
   try { const a = asArr(JSON.parse(out)); if (a.length) procs = a; } catch (e) { /* giữ lần quét trước */ }
 }
 async function scanTasks(cfg) {
@@ -83,7 +83,23 @@ async function scanGh(cfg) {
     try { gh[t.id] = { at: Date.now(), ...JSON.parse(o) }; } catch (e) {}
   }
 }
+const RAW = "https://raw.githubusercontent.com/MrLam123456/sari-ops/main/profiles/";
+let lastProfileSync = 0;
+function httpsText(url) {
+  return new Promise(resolve => {
+    require("https").get(url, { timeout: 10000 }, res => { if (res.statusCode !== 200) { res.resume(); return resolve(null); } let b = ""; res.setEncoding("utf8"); res.on("data", d => b += d); res.on("end", () => resolve(b)); }).on("error", () => resolve(null));
+  });
+}
+async function syncProfile() {
+  const pf = path.join(__dirname, "profile.txt");
+  if (!fs.existsSync(pf) || Date.now() - lastProfileSync < 10 * 60000) return;
+  lastProfileSync = Date.now();
+  const name = fs.readFileSync(pf, "utf8").replace(/^\uFEFF/, "").trim(); if (!/^[\w-]+$/.test(name)) return;
+  const txt = await httpsText(RAW + name + ".json?t=" + Date.now());
+  try { const j = JSON.parse(txt); if (Array.isArray(j.tools) && txt !== fs.readFileSync(CFG, "utf8")) fs.writeFileSync(CFG, txt, "utf8"); } catch (e) {}
+}
 async function scan() {
+  syncProfile().catch(() => {});
   const cfg = loadCfg();
   await Promise.all([scanProcs(), scanTasks(cfg), scanGit(cfg), scanPeers(cfg)]);
   lastScan = Date.now();
@@ -170,6 +186,17 @@ const server = http.createServer((req, res) => {
     const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), gh: ghOk, peers, error: cfg.error || null, tools };
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(body));
+  }
+  if (url === "/procs") {
+    const seen = {};
+    for (const x of procs) {
+      const exe = x.ExecutablePath || x.Name || "";
+      if (/^C:.Windows./i.test(exe) || /ops-server.js/.test(x.CommandLine)) continue;
+      const cmd = String(x.CommandLine || "").replace(/((token|key|pass|secret|pwd|cookie)\w*["']?\s*[=:\s]\s*)\S+/gi, "$1***").slice(0, 220);
+      const k = exe + "|" + cmd; if (!seen[k]) seen[k] = { name: x.Name, exe, cmd, n: 0 }; seen[k].n++;
+    }
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    return res.end(JSON.stringify({ host: HOST(), procs: Object.values(seen) }));
   }
   if (url === "/" || url === "/index.html") {
     fs.readFile(PAGE, (e, d) => {
