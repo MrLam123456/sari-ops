@@ -1,0 +1,136 @@
+{
+ "note": "PC 3: theo dõi mọi tool Sari trên GitHub, chỉ báo tool đang chạy trên máy này.",
+ "onlyRunning": true,
+ "tools": [
+  {
+   "id": "updateroom",
+   "name": "1 · Cập nhật phòng trống",
+   "role": "ToolUpdateRoom: quét nguồn CĐT, cập nhật phòng trống, gửi báo cáo Telegram",
+   "page": "n",
+   "match": "continuous-watchdog\\.ps1|Thinh-ToolUpdateRoom\\\\ToolUpdateRoom|1-ToolUpdateRoom",
+   "kind": "service",
+   "staleMin": 90,
+   "start": "Task Scheduler: chạy tác vụ ToolUpdateRoom-Continuous-Boot",
+   "path": ""
+  },
+  {
+   "id": "sarisheet",
+   "name": "2 · SariSheet",
+   "role": "Quét tin nhắn nhóm Zalo, nhận diện phòng còn trống, cập nhật trạng thái và giá lên Google Sheet mỗi ngày",
+   "page": "n",
+   "match": "SariSheet|2-SariSheet|sari-sheet",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app SariSheet (chạy ngầm ở khay hệ thống)",
+   "path": ""
+  },
+  {
+   "id": "aiagent",
+   "name": "3 · AI Agent cập nhật phòng",
+   "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
+   "page": "n",
+   "match": "ToolUpdateAIAgent|RUN-AI-AGENT|3-ToolUpdateAIAgent",
+   "kind": "service",
+   "start": "START-TOOL.bat trong thư mục tool",
+   "path": ""
+  },
+  {
+   "id": "saripost",
+   "name": "4 · Sari Post",
+   "role": "Tự đăng bài phòng Sari (SariAutoPoster, có AI viết tiêu đề)",
+   "page": "n",
+   "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py|4-Sari-post|Tool_Sari_Post",
+   "kind": "service",
+   "start": "Mở SariAutoPoster",
+   "path": ""
+  },
+  {
+   "id": "autofb",
+   "name": "5 · AutoFB bình luận",
+   "role": "Comment / reply hàng loạt trong nhóm Facebook theo từ khoá, nhiều tài khoản",
+   "page": "n",
+   "match": "AutoFB|5-FB-Comment-Main|autofb-app",
+   "exclude": "--type=",
+   "kind": "ondemand",
+   "start": "Mở app AutoFB, chọn tài khoản và bấm Run",
+   "path": ""
+  },
+  {
+   "id": "zalosender",
+   "name": "6 · Zalo Auto Sender",
+   "role": "Gửi tin nhắn Zalo hàng loạt",
+   "page": "n",
+   "match": "Zalo Auto Sender|6-zalo-tool-master|zalo-auto-sender",
+   "exclude": "--type=",
+   "kind": "ondemand",
+   "start": "Mở app Zalo Auto Sender",
+   "path": ""
+  },
+  {
+   "id": "live",
+   "name": "7 · Sari Live Assistant",
+   "role": "Trợ lý livestream TikTok",
+   "page": "n",
+   "match": "Sari Live Assistant|7-Live-Stream-TikTok|livestream-tiktok",
+   "exclude": "--type=",
+   "kind": "ondemand",
+   "start": "Mở app Sari Live Assistant khi livestream",
+   "path": ""
+  },
+  {
+   "id": "fbscan",
+   "name": "9+ · FB Group Scanner",
+   "role": "Quét nhóm Facebook, lọc SĐT chủ nhà, khách thuê, gia sư → Google Sheet",
+   "page": "n",
+   "match": "FB Group Scanner\\.exe\"? --hidden|fbscan-server|9-Plus-FB-Sari-Main",
+   "kind": "service",
+   "start": "Mở app FB Group Scanner (chạy nền ở khay hệ thống)",
+   "path": ""
+  },
+  {
+   "id": "zalo",
+   "name": "9 · Zalo Lớp Học 1-1",
+   "role": "Ghép lớp gia sư, tạo nhóm Zalo, gửi link Meet, nhắc và xác nhận học phí",
+   "page": "e",
+   "match": "9-ZaloMeetTG|9-ZaloMeetTG",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Tự bật khi mở máy (Startup: Zalo Lop Hoc 1-1.vbs)",
+   "path": ""
+  },
+  {
+   "id": "fbpostgroup",
+   "name": "10+ · Đăng bài lên nhóm FB",
+   "role": "FbPostGroup: lấy phòng từ app Sari, ghép tin theo mẫu, đăng hàng loạt vào nhóm Facebook có hẹn giờ",
+   "page": "n",
+   "match": "FbPostGroup|Fb-POST-GROUP.node_modules.electron.dist.electron\\.exe|10-Plus-Dang-Bai|fb-post-group",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app FbPostGroup (hẹn giờ đăng chạy khi app mở)",
+   "path": ""
+  },
+  {
+   "id": "sendzalo",
+   "name": "10 · Gửi phòng qua Zalo",
+   "role": "SendMessageZalo: lấy phòng từ app Sari, gửi tin theo mẫu vào Zalo",
+   "page": "n",
+   "match": "SendMessageZalo|10-SendMessageZalo|send-message-zalo",
+   "exclude": "--type=",
+   "kind": "service",
+   "start": "Mở app SendMessageZalo",
+   "path": ""
+  },
+  {
+   "id": "tool1",
+   "name": "Đồng bộ phòng → web",
+   "role": "Tool 1+: đẩy phòng trống Sari lên web Thiên Khôi",
+   "page": "n",
+   "match": "sari_to_web\\.py|tool1-plus-up-bai-len-web|RequestDataToWeb",
+   "kind": "service",
+   "staleMin": 90,
+   "ignore": "nominatim",
+   "start": "Tự bật khi mở máy (Startup: run_forever.bat)",
+   "path": ""
+  }
+ ]
+}

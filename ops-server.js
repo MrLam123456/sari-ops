@@ -149,6 +149,7 @@ function status(t) {
   } else if (!exists) { state = "absent"; label = "Chưa cài trên máy này"; }
   else if (t.kind === "service") { state = "down"; label = "Đã dừng"; }
   else { state = "off"; label = "Nghỉ, chạy khi cần"; }
+  if (loadCfg().onlyRunning && !running && t.kind !== "cloud") { state = "absent"; label = "Không chạy trên máy này"; }
   const starts = mine.map(x => x.Start).filter(Boolean).sort();
   return {
     host: HOST(), id: t.id, name: t.name, role: t.role, page: t.page, repo: t.repo, kind: t.kind, start: t.start, path: p,
