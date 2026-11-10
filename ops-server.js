@@ -209,7 +209,7 @@ const server = http.createServer((req, res) => {
         else if (["absent", "off", "down", "unknown"].includes(tools[i].state) && (tools[i].state === "absent" || remote.state === "ok" || remote.state === "warn" || remote.state === "idle")) tools[i] = remote;
       }
     }
-    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), hw: HW, load: LOAD, gh: ghOk, peers, error: cfg.error || null, tools };
+    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), hw: HW, load: LOAD, pageAt: (() => { try { return fs.statSync(PAGE).mtimeMs; } catch (e) { return null; } })(), gh: ghOk, peers, error: cfg.error || null, tools };
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(body));
   }
