@@ -191,6 +191,9 @@ async function enforceInstall(cfg, items) {
     const inbox = path.join(__dirname, "inbox"); fs.mkdirSync(inbox, { recursive: true });
     const file = path.join(inbox, path.basename(it.file));
     if (!fs.existsSync(file)) await run("C:\\Program Files\\Tailscale\\tailscale.exe", ["file", "get", "--conflict=overwrite", inbox]);
+    if (!fs.existsSync(file)) { // Tailscale trên Windows hay tự lưu file nhận vào Downloads của user → tìm ở đó (SHA256 vẫn kiểm bên dưới)
+      try { for (const u of fs.readdirSync("C:\\Users")) { const c = path.join("C:\\Users", u, "Downloads", path.basename(it.file)); if (fs.existsSync(c)) { fs.copyFileSync(c, file); enfLog(`[${it.id}] cài đặt: lấy file từ ${c}`); break; } } } catch (e) {}
+    }
     if (!fs.existsSync(file)) { enfLog(`[${it.id}] cài đặt: đang chờ file ${it.file} gửi qua Tailscale (bản hiện tại: ${cur || "chưa cài"})`); installAt[it.id] = Date.now() - 25 * 60000; continue; }
     const h = require("crypto").createHash("sha256").update(fs.readFileSync(file)).digest("hex");
     if (h.toLowerCase() !== it.sha256.toLowerCase()) { enfLog(`[${it.id}] cài đặt: SHA256 KHÔNG khớp, đã xoá file ${it.file}`); try { fs.unlinkSync(file); } catch (e) {} continue; }
