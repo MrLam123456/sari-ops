@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
 # Danh sach tool cua may tu cap nhat tu profiles/<bo tool>.json moi 10 phut.
 # Doi ten may / bo tool (tuy chon):
-#   $env:SARI_MAY='PC 3'; $env:SARI_PROFILE='pc2'; irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
+#   $env:SARI_MAY='PC 3 - 176'; $env:SARI_PROFILE='pc2'; irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $base = 'https://raw.githubusercontent.com/MrLam123456/sari-ops/main'

@@ -13,7 +13,7 @@ irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | ie
 Muốn đặt tên máy, thêm phần này vào trước câu lệnh:
 
 ```powershell
-$env:SARI_MAY='PC 2'; irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
+$env:SARI_MAY='PC 2 - 750'; irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/install.ps1 | iex
 ```
 
 Script tự làm các việc sau:
@@ -36,7 +36,7 @@ PC 1 đặt tên các máy theo **tên Windows**, nên cài lại máy nào cũn
 
 | Tên | Tên Windows | Cấu hình |
 |---|---|---|
-| PC 1 (máy chính) | DESKTOP-D4SAD92 | i9-9900K · 16 luồng · 24GB |
-| PC 2 (máy 750) | Admin-PC | i5-10400 · 12 luồng · 16GB |
-| PC 3 | DESKTOP-ESH4R6B | Pentium Gold G6405 · 4 luồng · 16GB |
-| Laptop (máy 078) | DESKTOP-U7GL1F6 | i7-1185G7 · 8 luồng · 32GB |
+| PC 1 - 892 (máy chính) | DESKTOP-D4SAD92 | i9-9900K · 16 luồng · 24GB |
+| PC 2 - 750 | Admin-PC | i5-10400 · 12 luồng · 16GB |
+| PC 3 - 176 | DESKTOP-ESH4R6B | Pentium Gold G6405 · 4 luồng · 16GB |
+| Laptop - 078 | DESKTOP-U7GL1F6 | i7-1185G7 · 8 luồng · 32GB |

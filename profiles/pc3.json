@@ -1,10 +1,10 @@
 {
- "note": "PC 3: theo dõi mọi tool Sari trên GitHub, chỉ báo tool đang chạy trên máy này.",
+ "note": "PC 3 - 176: theo dõi mọi tool Sari trên GitHub, chỉ báo tool đang chạy trên máy này.",
  "onlyRunning": true,
  "tools": [
   {
    "id": "updateroom",
-   "name": "1 · Cập nhật sheet phòng trống (đàm) · PC 1",
+   "name": "1 · Cập nhật sheet phòng trống (đàm) · PC 1 - 892",
    "role": "ToolUpdateRoom: quét nguồn CĐT, cập nhật phòng trống, gửi báo cáo Telegram",
    "page": "n",
    "match": "continuous-watchdog\\.ps1|Thinh-ToolUpdateRoom\\\\ToolUpdateRoom|1-ToolUpdateRoom",
@@ -26,12 +26,12 @@
   },
   {
    "id": "aiagent",
-   "name": "3 · AI Agent cập nhật phòng · PC 2",
+   "name": "3 · AI Agent cập nhật phòng · PC 2 - 750",
    "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
    "page": "n",
    "match": "ToolUpdateAIAgent|RUN-AI-AGENT|3-ToolUpdateAIAgent",
    "kind": "service",
-   "start": "START-TOOL.bat trong Desktop/ToolUpdateAIAgent (PC 3)",
+   "start": "START-TOOL.bat trong Desktop/ToolUpdateAIAgent (PC 3 - 176)",
    "path": "",
    "log": {
     "dir": "C:/Users/Admin/Desktop/ToolUpdateAIAgent/log",
@@ -46,7 +46,7 @@
    "page": "n",
    "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py|4-Sari-post|Tool_Sari_Post",
    "kind": "service",
-   "start": "SariAutoPoster tự bật cùng Windows (PC 3)",
+   "start": "SariAutoPoster tự bật cùng Windows (PC 3 - 176)",
    "path": ""
   },
   {
@@ -127,7 +127,7 @@
   },
   {
    "id": "tool1",
-   "name": "1+ · Đẩy phòng Sari → web · PC 1",
+   "name": "1+ · Đẩy phòng Sari → web · PC 1 - 892",
    "role": "Tool 1+: đẩy phòng trống Sari lên web Thiên Khôi",
    "page": "n",
    "match": "sari_to_web\\.py|tool1-plus-up-bai-len-web|RequestDataToWeb",
