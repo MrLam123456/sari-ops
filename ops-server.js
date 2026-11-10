@@ -218,13 +218,13 @@ async function enforceInstall(cfg, items) {
     ].join("\r\n");
     const ps1File = path.join(inbox, "install-" + it.id + ".ps1");
     fs.writeFileSync(ps1File, "﻿" + ps1, "utf8");
-    const outFile = path.join(inbox, "install-" + it.id + ".out.txt"), fd = fs.openSync(outFile, "w");
-    const ch = require("child_process").spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps1File], { detached: true, stdio: ["ignore", fd, fd], windowsHide: true });
-    fs.closeSync(fd); fs.writeFileSync(lock, String(ch.pid || 0));
-    const t0 = Date.now();
-    ch.on("error", e => enfLog(`[${it.id}] cài đặt: không mở được PowerShell: ${e.message}`));
-    ch.on("exit", code => { let o = ""; try { o = fs.readFileSync(outFile, "utf8").replace(/\s+/g, " ").trim().slice(0, 400); } catch (e) {} enfLog(`[${it.id}] cài đặt: PowerShell (pid ${ch.pid}) thoát mã ${code} sau ${Math.round((Date.now() - t0) / 1000)}s${o ? " — " + o : ""}`); });
-    ch.unref();
+    // KHÔNG spawn detached (PowerShell 5.1 không có console sẽ thoát ngay, không chạy gì) và không spawn con thường
+    // (Node gom con vào job, ops-server tự khởi động lại là giết theo) → dùng Start-Process để script tách hẳn ra
+    const errFile = path.join(inbox, "install-" + it.id + ".err.txt");
+    const pid = (await ps("$p=Start-Process -FilePath powershell.exe -WindowStyle Hidden -PassThru -RedirectStandardError " + q(errFile) +
+      " -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File'," + q('"' + ps1File + '"') + "; $p.Id")).trim();
+    if (!/^\d+$/.test(pid)) { enfLog(`[${it.id}] cài đặt: không mở được PowerShell cài đặt`); continue; }
+    fs.writeFileSync(lock, pid);
     enfLog(`[${it.id}] cài đặt: SHA256 khớp, đang cài ${it.file} (${cur || "chưa cài"} → ${it.version}) — Windows sẽ hỏi quyền Admin (UAC), cần bấm Yes trên máy`);
   }
 }
