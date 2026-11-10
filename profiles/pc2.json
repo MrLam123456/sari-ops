@@ -100,9 +100,18 @@
    ]
   },
   "DESKTOP-U7GL1F6": {
-   "note": "Laptop - 078: bat tool 11 (Zalo Auto Sender) neu chua chay",
+   "note": "Laptop - 078: tool 11 chay tren may nay, cai ban 1.5.0 (Gemini + Quet FB)",
    "start": [
     "zalosender"
+   ],
+   "install": [
+    {
+     "id": "zalosender",
+     "version": "1.5.0",
+     "file": "Zalo-Auto-Sender-Setup-1.5.0.exe",
+     "sha256": "9acdf28001df27148ff633da0a9a277ac1fe67a30fe2154868d0c984c64929d7",
+     "repo": "Sari-tool/6-zalo-tool-master releases v1.5.0"
+    }
    ]
   }
  }

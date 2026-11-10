@@ -161,6 +161,7 @@ async function enforce(cfg) {
       enfLog(`[${id}] đã tắt ${pids.length} tiến trình theo lệnh PC 1 (${t.name})`);
     }
   }
+  if (rule && rule[1] && Array.isArray(rule[1].install)) await enforceInstall(cfg, rule[1].install).catch(e => enfLog("lỗi cài đặt: " + e.message));
   const start = rule && rule[1] && Array.isArray(rule[1].start) ? rule[1].start : [];
   for (const id of start) { // bật lại tool (lệnh PC 1): mở app nếu chưa chạy, tối đa 30 phút/lần
     const t = cfg.tools.find(x => x.id === id); if (!t || !t.match) continue;
@@ -173,6 +174,33 @@ async function enforce(cfg) {
     const dir = t.path ? t.path.replace(/%([^%]+)%/g, (_, k) => process.env[k] || "") : "";
     const o = (await ps("$re=" + q(t.match) + ";$name=" + q(name) + ";$dir=" + q(dir) + ";" + STARTUP_ON_PS)).trim();
     enfLog(`[${id}] bật lại theo lệnh PC 1 (${t.name}): ${o}`);
+  }
+}
+// ===== Cài bản mới từ xa (enforce.install): file cài gửi qua Taildrop, kiểm SHA256, cài khi bản trên máy thấp hơn =====
+const installAt = {};
+const verLt = (a, b) => { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); } return false; };
+async function enforceInstall(cfg, items) {
+  for (const it of items) {
+    const t = cfg.tools.find(x => x.id === it.id); if (!t || !it.version || !it.file || !/^[0-9a-f]{64}$/i.test(it.sha256 || "")) continue;
+    if (installAt[it.id] && Date.now() - installAt[it.id] < 30 * 60000) continue;
+    const dir = (t.path || "").replace(/%([^%]+)%/g, (_, k) => process.env[k] || "");
+    const q = v => "'" + String(v).replace(/'/g, "''") + "'";
+    const cur = (await ps("$e=Get-ChildItem " + q(dir) + " -Filter *.exe -EA SilentlyContinue | Where-Object { $_.Name -notmatch '(?i)unins|uninstall|elevate' } | Select-Object -First 1; if($e){ $e.VersionInfo.FileVersion }")).trim();
+    if (cur && !verLt(cur, it.version)) { if (installAt[it.id] !== -1) enfLog(`[${it.id}] cài đặt: máy đã có bản ${cur} (>= ${it.version})`); installAt[it.id] = -1; continue; }
+    installAt[it.id] = Date.now();
+    const inbox = path.join(__dirname, "inbox"); fs.mkdirSync(inbox, { recursive: true });
+    const file = path.join(inbox, path.basename(it.file));
+    if (!fs.existsSync(file)) await run("C:\\Program Files\\Tailscale\\tailscale.exe", ["file", "get", "--conflict=overwrite", inbox]);
+    if (!fs.existsSync(file)) { enfLog(`[${it.id}] cài đặt: đang chờ file ${it.file} gửi qua Tailscale (bản hiện tại: ${cur || "chưa cài"})`); installAt[it.id] = Date.now() - 25 * 60000; continue; }
+    const h = require("crypto").createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+    if (h.toLowerCase() !== it.sha256.toLowerCase()) { enfLog(`[${it.id}] cài đặt: SHA256 KHÔNG khớp, đã xoá file ${it.file}`); try { fs.unlinkSync(file); } catch (e) {} continue; }
+    const exe = (await ps("$e=Get-ChildItem " + q(dir) + " -Filter *.exe -EA SilentlyContinue | Where-Object { $_.Name -notmatch '(?i)unins|uninstall|elevate' } | Select-Object -First 1; if($e){ $e.FullName }")).trim();
+    const script = "$ErrorActionPreference='Continue'; Get-Process | Where-Object { $_.Path -and $_.Path -like " + q(dir + "\\*") + " } | Stop-Process -Force; Start-Sleep 2; " +
+      "$p=Start-Process -FilePath " + q(file) + " -ArgumentList '/S','/allusers' -Verb RunAs -PassThru -Wait; " +
+      (exe ? "Start-Sleep 3; Start-Process -FilePath " + q(exe) + "; " : "") +
+      "Add-Content -LiteralPath " + q(ENF_LOG) + " -Encoding utf8 -Value ((Get-Date).ToString('o') + ' [" + it.id + "] cài đặt xong, mã thoát ' + $p.ExitCode)";
+    require("child_process").spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", script], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    enfLog(`[${it.id}] cài đặt: SHA256 khớp, đang cài ${it.file} (${cur || "chưa cài"} → ${it.version}) — Windows sẽ hỏi quyền Admin (UAC), cần bấm Yes trên máy`);
   }
 }
 // ===== Tự cập nhật ops-server.js từ GitHub (chỉ máy phụ có profile.txt; PC 1 sửa tay) =====
