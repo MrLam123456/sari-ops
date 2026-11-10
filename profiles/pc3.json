@@ -41,7 +41,7 @@
   },
   {
    "id": "saripost",
-   "name": "4 · Sari Post",
+   "name": "4 · Sari Post tòa mới · PC 2 - 750",
    "role": "Tự đăng bài phòng Sari (SariAutoPoster, có AI viết tiêu đề)",
    "page": "n",
    "match": "SariAutoPoster|sari_post\\.py|sari_gui\\.py|4-Sari-post|Tool_Sari_Post",
