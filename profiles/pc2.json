@@ -48,7 +48,7 @@
   {
    "id": "zalosender",
    "name": "11 · Rep tin nhắn Zalo HR, sale · Laptop - 078",
-   "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. CHỈ chạy trên Laptop - 078",
+   "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. Từ bản 1.4.17 có thêm Quét FB (tính năng 6+): quét bài nhóm FB theo từ khóa → lấy SĐT (từ nội dung bài, hoặc tra UID qua api.fbuid.com trả phí) → tự đưa vào Auto Chat nhắn Zalo gửi phòng. CHỈ chạy trên Laptop - 078",
    "page": "n",
    "path": "C:\\Program Files\\Zalo Auto Sender",
    "match": "Zalo Auto Sender",
