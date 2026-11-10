@@ -69,7 +69,7 @@
   },
   {
    "id": "uipath",
-   "name": "8 · Nhắn tin Zalo qua UiPath · PC 3 - 176",
+   "name": "8 · Nhắn tin booking tới Zalo = UiPath · PC 3 - 176",
    "role": "Robot UiPath (UiPath Assistant + Robot) tự nhắn tin Zalo theo kịch bản; đang làm việc khi Assistant/Executor chạy",
    "page": "n",
    "kind": "service",
