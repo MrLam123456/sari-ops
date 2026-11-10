@@ -22,6 +22,16 @@ const TS = "C:/Program Files/Tailscale/tailscale.exe";
 const HW = (() => { const os = require("os"), c = os.cpus() || [];
   const cpu = String((c[0] && c[0].model) || "").replace(/\((R|TM)\)/gi, "").replace(/ CPU /gi, " ").replace(/@.*$/, "").replace(/\s+/g, " ").trim();
   return { cpu, threads: c.length, ramGB: Math.round(os.totalmem() / 2 ** 30), pc: os.hostname() }; })();
+// Tải máy hiện tại: % CPU (đo chênh lệch 5 giây) và % RAM đang dùng.
+let LOAD = null, prevCpu = null;
+function sampleLoad() {
+  const os = require("os"); let idle = 0, total = 0;
+  for (const x of os.cpus() || []) { for (const k in x.times) total += x.times[k]; idle += x.times.idle; }
+  const tm = os.totalmem(), fm = os.freemem();
+  if (prevCpu && total > prevCpu.total) LOAD = { cpu: Math.round(100 * (1 - (idle - prevCpu.idle) / (total - prevCpu.total))), ram: Math.round(100 * (1 - fm / tm)), ramUsedGB: +((tm - fm) / 2 ** 30).toFixed(1), at: new Date().toISOString() };
+  prevCpu = { idle, total };
+}
+sampleLoad(); setInterval(sampleLoad, 5000).unref();
 let FB = null; try { FB = require("./fb-poster"); } catch (e) { if (e.code !== "MODULE_NOT_FOUND") console.error("fb-poster:", e.message); }
 function getJson(url, ms = 5000) {
   return new Promise(resolve => {
@@ -52,7 +62,7 @@ async function scanPeers(cfg) {
   for (const t of targets) {
     const d = t.online === false ? null : await getJson(t.url + "/status?local=1", 5000);
     const prev = peerData[t.key];
-    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, hw: d.hw || null, known: true };
+    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, hw: d.hw || null, load: d.load || null, known: true };
     else if (prev && prev.known) peerData[t.key] = { ...prev, ok: false };   // từng kết nối, giờ mất
     else delete peerData[t.key];                                             // PC chưa cài Sari Ops: bỏ qua
   }
@@ -183,7 +193,7 @@ const server = http.createServer((req, res) => {
     let tools = cfg.tools.map(status);
     const peers = [], hwOf = d => d.hw || (cfg.hwNote || {})[d.name] || null;
     if (!localOnly) for (const d of Object.values(peerData)) {
-      peers.push({ name: d.name, url: d.url, ok: d.ok, hw: hwOf(d) });
+      peers.push({ name: d.name, url: d.url, ok: d.ok, hw: hwOf(d), load: d.ok ? d.load || null : null });
       for (const pt of d.tools) {
         if (pt.state === "absent") continue;
         const i = tools.findIndex(t => t.id === pt.id);
@@ -194,7 +204,7 @@ const server = http.createServer((req, res) => {
         else if (["absent", "off", "down", "unknown"].includes(tools[i].state) && (tools[i].state === "absent" || remote.state === "ok" || remote.state === "warn" || remote.state === "idle")) tools[i] = remote;
       }
     }
-    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), hw: HW, gh: ghOk, peers, error: cfg.error || null, tools };
+    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), hw: HW, load: LOAD, gh: ghOk, peers, error: cfg.error || null, tools };
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(body));
   }
