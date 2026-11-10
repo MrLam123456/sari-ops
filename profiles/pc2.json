@@ -66,6 +66,17 @@
    "kind": "ondemand",
    "start": "Mở app Sari Live Assistant khi livestream",
    "path": ""
+  },
+  {
+   "id": "uipath",
+   "name": "8 · Nhắn tin Zalo qua UiPath · PC 3 - 176",
+   "role": "Robot UiPath (UiPath Assistant + Robot) tự nhắn tin Zalo theo kịch bản; đang làm việc khi Assistant/Executor chạy",
+   "page": "n",
+   "kind": "service",
+   "match": "UiPath.Assistant|UiPath.Executor",
+   "exclude": "--type=",
+   "start": "Mở UiPath Assistant trên PC 3 - 176 và chạy kịch bản nhắn tin Zalo",
+   "path": ""
   }
  ]
 }
