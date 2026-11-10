@@ -18,6 +18,7 @@ const asArr = v => v == null ? [] : Array.isArray(v) ? v : [v];
 let procs = [], tasks = {}, git = {}, gh = {}, lastScan = 0, ghOk = null, peerData = {};
 const HOST = () => { const c = loadCfg(); if (c.machine) return c.machine; try { return fs.readFileSync(path.join(__dirname, "machine.txt"), "utf8").replace(/^﻿/, "").trim() || require("os").hostname(); } catch (e) { return require("os").hostname(); } };
 const TS = "C:/Program Files/Tailscale/tailscale.exe";
+let FB = null; try { FB = require("./fb-poster"); } catch (e) { if (e.code !== "MODULE_NOT_FOUND") console.error("fb-poster:", e.message); }
 function getJson(url, ms = 5000) {
   return new Promise(resolve => {
     const req = http.get(url, { timeout: ms }, res => { let b = ""; res.setEncoding("utf8"); res.on("data", d => b += d); res.on("end", () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(null); } }); });
@@ -139,17 +140,20 @@ function status(t) {
   const task = t.task ? tasks[t.task] || null : null;
   const running = mine.length > 0 || (task && task.state === "Running");
   const log = readLog(t), age = log ? Date.now() - log.mtime : null;
+  // Tool chạy theo đợt (Task Scheduler gọi lại vài phút một lần): giữa 2 đợt không thấy tiến trình,
+  // nhưng log vừa ghi gần đây thì vẫn coi là đang làm việc.
+  const freshLog = !running && exists && t.kind === "service" && age != null && age <= (t.staleMin || 15) * 60000;
   let state, label;
   if (t.kind === "cloud") { state = "cloud"; label = "Chạy trên Google, máy không theo dõi được"; }
-  else if (running) {
+  else if (running || freshLog) {
     const err = !t.noErr && log && /error|traceback|exception|fatal|lỗi/i.test(log.last) && !(t.ignore && new RegExp(t.ignore, "i").test(log.last));
     if (err) { state = "warn"; label = "Đang chạy, vừa báo lỗi"; }
     else if (t.staleMin && age != null && age > t.staleMin * 60000) { state = "idle"; label = "Đang chạy, im lặng " + ago(age); }
-    else { state = "ok"; label = "Đang làm việc"; }
+    else { state = "ok"; label = freshLog ? "Đang làm việc (chạy theo đợt, log " + ago(age) + " trước)" : "Đang làm việc"; }
   } else if (!exists) { state = "absent"; label = "Chưa cài trên máy này"; }
   else if (t.kind === "service") { state = "down"; label = "Đã dừng"; }
   else { state = "off"; label = "Nghỉ, chạy khi cần"; }
-  if (loadCfg().onlyRunning && !running && t.kind !== "cloud") { state = "absent"; label = "Không chạy trên máy này"; }
+  if (loadCfg().onlyRunning && !running && !freshLog && t.kind !== "cloud") { state = "absent"; label = "Không chạy trên máy này"; }
   const starts = mine.map(x => x.Start).filter(Boolean).sort();
   return {
     host: HOST(), id: t.id, name: t.name, role: t.role, page: t.page, repo: t.repo, kind: t.kind, start: t.start, path: p,
@@ -167,6 +171,7 @@ const allowed = ip => { ip = String(ip || "").replace(/^::ffff:/, ""); if (ip ==
 const server = http.createServer((req, res) => {
   if (!allowed(req.socket.remoteAddress)) { res.writeHead(403); return res.end(); }
   const url = req.url.split("?")[0];
+  if (FB && FB.handle(req, res, url)) return;
   res.setHeader("Access-Control-Allow-Origin", "*");
   if (url === "/status") {
     const cfg = loadCfg();
