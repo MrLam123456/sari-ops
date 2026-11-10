@@ -26,7 +26,7 @@
   },
   {
    "id": "aiagent",
-   "name": "3 · AI Agent cập nhật phòng",
+   "name": "3 · AI Agent cập nhật phòng · PC 3",
    "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
    "page": "n",
    "match": "ToolUpdateAIAgent|RUN-AI-AGENT|3-ToolUpdateAIAgent",
