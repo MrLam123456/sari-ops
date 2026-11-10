@@ -47,14 +47,14 @@
   },
   {
    "id": "zalosender",
-   "name": "6 · Zalo Auto Sender",
-   "role": "Gửi tin nhắn Zalo hàng loạt",
+   "name": "6 · Zalo rep khách · PC 3 - 176",
+   "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. CHỈ chạy trên PC 3 - 176",
    "page": "n",
    "path": "",
    "match": "Zalo Auto Sender",
    "exclude": "--type=",
    "kind": "ondemand",
-   "start": "Mở app Zalo Auto Sender"
+   "start": "Mở app Zalo Auto Sender trên PC 3 - 176"
   }
  ]
 }
