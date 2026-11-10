@@ -90,8 +90,9 @@
    "kind": "service",
    "match": "UiPath.Assistant|UiPath.Executor",
    "exclude": "--type=",
-   "start": "Mở UiPath Assistant trên PC 3 - 176 và chạy kịch bản nhắn tin Zalo",
-   "path": ""
+   "start": "Máy mới: irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/tools/install-tool8.ps1 | iex — rồi mở UiPath Assistant trên PC 3 - 176 để chạy kịch bản booking",
+   "path": "",
+   "repo": "Sari-tool/8-Zalo-Booking-UiPath"
   },
   {
    "id": "fbscan",
