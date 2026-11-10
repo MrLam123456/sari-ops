@@ -78,6 +78,16 @@
    "start": "Máy mới: irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/tools/install-tool8.ps1 | iex — rồi mở UiPath Assistant trên PC 3 - 176 để chạy kịch bản booking",
    "path": "",
    "repo": "Sari-tool/8-Zalo-Booking-UiPath"
+  },
+  {
+   "id": "fbscan",
+   "name": "9+ · Quét post FB chủ, khách... bằng từ khóa · Laptop - 078",
+   "role": "Quét nhóm Facebook, lọc SĐT chủ nhà, khách thuê, gia sư → Google Sheet",
+   "page": "n",
+   "match": "FB Group Scanner\\.exe\"? --hidden|fbscan-server|9-Plus-FB-Sari-Main",
+   "kind": "service",
+   "start": "Mở app FB Group Scanner (chạy nền ở khay hệ thống)",
+   "path": ""
   }
  ]
 }

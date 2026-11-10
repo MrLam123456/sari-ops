@@ -96,7 +96,7 @@
   },
   {
    "id": "fbscan",
-   "name": "9+ · FB Group Scanner",
+   "name": "9+ · Quét post FB chủ, khách... bằng từ khóa · Laptop - 078",
    "role": "Quét nhóm Facebook, lọc SĐT chủ nhà, khách thuê, gia sư → Google Sheet",
    "page": "n",
    "match": "FB Group Scanner\\.exe\"? --hidden|fbscan-server|9-Plus-FB-Sari-Main",
