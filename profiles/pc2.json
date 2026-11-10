@@ -89,5 +89,19 @@
    "start": "Mở app FB Group Scanner (chạy nền ở khay hệ thống)",
    "path": ""
   }
- ]
+ ],
+ "enforce": {
+  "DESKTOP-ESH4R6B": {
+   "note": "PC 3 - 176: tool 10 chi chay tren Laptop - 078",
+   "stop": [
+    "sendzalo"
+   ]
+  },
+  "DESKTOP-U7GL1F6": {
+   "note": "Laptop - 078: tool 6 chi chay tren PC 3 - 176",
+   "stop": [
+    "zalosender"
+   ]
+  }
+ }
 }

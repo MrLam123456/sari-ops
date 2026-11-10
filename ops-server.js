@@ -113,12 +113,64 @@ async function syncProfile() {
   const txt = await httpsText(RAW + name + ".json?t=" + Date.now());
   try { const j = JSON.parse(txt); if (Array.isArray(j.tools) && txt !== fs.readFileSync(CFG, "utf8")) fs.writeFileSync(CFG, txt, "utf8"); } catch (e) {}
 }
+// ===== Lệnh từ PC 1 qua profile trên GitHub (không mở thêm cổng mạng) =====
+// "enforce": { "<TÊN WINDOWS>": { "stop": ["<id tool>"] } }
+// -> máy có đúng tên Windows đó tự tắt tool + tắt tự khởi động (giống "Disable" trong Task Manager). Chỉ TẮT, không chạy lệnh tùy ý.
+const ENF_LOG = path.join(__dirname, "enforce.log");
+const enfLog = m => { try { fs.appendFileSync(ENF_LOG, new Date().toISOString() + " " + m + "\n", "utf8"); } catch (e) {} };
+const STARTUP_OFF_PS = String.raw`
+$sa='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved'; $off=[byte[]](3,0,0,0,0,0,0,0,0,0,0,0); $done=@()
+function Off($sub,$name){ $k="$sa\$sub"; if(-not(Test-Path $k)){ New-Item $k -Force | Out-Null }; $cur=(Get-ItemProperty $k -EA SilentlyContinue).$name; if(-not $cur -or $cur[0] -ne 3){ New-ItemProperty $k -Name $name -PropertyType Binary -Value $off -Force | Out-Null; $script:done+="$sub/$name" } }
+$run=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -EA SilentlyContinue
+if($run){ $run.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' -and ("$($_.Name) $($_.Value)" -match $re) } | ForEach-Object { Off 'Run' $_.Name } }
+$sf=[Environment]::GetFolderPath('Startup'); Get-ChildItem $sf -File -EA SilentlyContinue | Where-Object { $_.Name -match $re } | ForEach-Object { Off 'StartupFolder' $_.Name }
+$hk=Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run' -EA SilentlyContinue
+if($hk){ $hk.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' -and ("$($_.Name) $($_.Value)" -match $re) } | ForEach-Object { $done+="HKLM-can-Admin/$($_.Name)" } }
+$done -join ';'`;
+const enforcedAt = {};
+async function enforce(cfg) {
+  const me = require("os").hostname().toLowerCase();
+  const rule = Object.entries(cfg.enforce || {}).find(([k]) => k.toLowerCase() === me);
+  const stop = rule && rule[1] && Array.isArray(rule[1].stop) ? rule[1].stop : [];
+  for (const id of stop) {
+    const t = cfg.tools.find(x => x.id === id); if (!t || !t.match) continue;
+    const re = new RegExp(t.match, "i"), ex = t.exclude ? new RegExp(t.exclude, "i") : null;
+    const pids = procs.filter(x => re.test(x.CommandLine) && !(ex && ex.test(x.CommandLine)) && !/ops-server\.js/.test(x.CommandLine)).map(x => String(x.ProcessId));
+    if (!enforcedAt[id] || Date.now() - enforcedAt[id] > 30 * 60000) { // tắt tự khởi động: lần đầu + 30 phút/lần
+      enforcedAt[id] = Date.now();
+      const o = (await ps("$re='" + t.match.replace(/'/g, "''") + "';" + STARTUP_OFF_PS)).trim();
+      if (o) enfLog(`[${id}] tắt tự khởi động: ${o}`);
+    }
+    if (pids.length) {
+      await run("taskkill", ["/F", "/T", ...pids.flatMap(p => ["/PID", p])]);
+      enfLog(`[${id}] đã tắt ${pids.length} tiến trình theo lệnh PC 1 (${t.name})`);
+    }
+  }
+}
+// ===== Tự cập nhật ops-server.js từ GitHub (chỉ máy phụ có profile.txt; PC 1 sửa tay) =====
+const RAW_SRV = "https://raw.githubusercontent.com/MrLam123456/sari-ops/main/ops-server.js";
+let lastSelfUpd = Date.now() - 25 * 60000; // lần đầu sau ~5 phút
+async function selfUpdate() {
+  if (!fs.existsSync(path.join(__dirname, "profile.txt")) || Date.now() - lastSelfUpd < 30 * 60000) return;
+  lastSelfUpd = Date.now();
+  const txt = await httpsText(RAW_SRV + "?t=" + Date.now());
+  if (!txt || txt.length < 5000 || !txt.includes("Phòng Vận hành") || txt === fs.readFileSync(__filename, "utf8")) return;
+  const tmp = __filename.replace(/\.js$/, "") + ".new.js"; fs.writeFileSync(tmp, txt, "utf8"); // node --check cần đuôi .js
+  const ok = await new Promise(r => execFile(process.execPath, ["--check", tmp], { windowsHide: true }, e => r(!e)));
+  if (!ok) { enfLog("tự cập nhật: bản mới lỗi cú pháp, giữ bản cũ"); try { fs.unlinkSync(tmp); } catch (e) {} return; }
+  fs.copyFileSync(__filename, __filename + ".bak"); fs.renameSync(tmp, __filename);
+  enfLog("tự cập nhật: đã thay bản mới, khởi động lại");
+  require("child_process").spawn(process.execPath, [__filename, ...process.argv.slice(2)], { cwd: __dirname, detached: true, stdio: "ignore", windowsHide: true }).unref();
+  setTimeout(() => process.exit(0), 300);
+}
 async function scan() {
   syncProfile().catch(() => {});
   const cfg = loadCfg();
   await Promise.all([scanProcs(), scanTasks(cfg), scanGit(cfg), scanPeers(cfg)]);
   lastScan = Date.now();
+  enforce(cfg).catch(e => enfLog("lỗi enforce: " + e.message));
   scanGh(cfg).catch(() => {});
+  selfUpdate().catch(e => enfLog("lỗi tự cập nhật: " + e.message));
 }
 
 function newestIn(dir, pattern) {
@@ -233,7 +285,11 @@ const server = http.createServer((req, res) => {
   }
   res.writeHead(404); res.end();
 });
-server.on("error", e => { console.error(e.code === "EADDRINUSE" ? `Cổng ${PORT} đang bận: có thể máy theo dõi đã chạy rồi.` : e); process.exit(1); });
+let busyTries = 0; // sau khi tự cập nhật, bản cũ có thể chưa nhả cổng kịp -> thử lại vài lần
+server.on("error", e => {
+  if (e.code === "EADDRINUSE" && ++busyTries <= 10) { setTimeout(() => server.listen(PORT, "0.0.0.0"), 2000); return; }
+  console.error(e.code === "EADDRINUSE" ? `Cổng ${PORT} đang bận: có thể máy theo dõi đã chạy rồi.` : e); process.exit(1);
+});
 scan().then(() => {
   server.listen(PORT, "0.0.0.0", () => console.log(`Phòng Vận hành: http://localhost:${PORT}`));
   setInterval(() => scan().catch(() => {}), SCAN_MS);
