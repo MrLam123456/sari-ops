@@ -128,7 +128,7 @@
   },
   {
    "id": "sendzalo",
-   "name": "10 · Gửi phòng qua Zalo",
+   "name": "10 · Gửi phòng Sari vào nhóm Zalo · Laptop - 078",
    "role": "SendMessageZalo: lấy phòng từ app Sari, gửi tin theo mẫu vào Zalo",
    "page": "n",
    "match": "SendMessageZalo|10-SendMessageZalo|send-message-zalo",
