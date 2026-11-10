@@ -92,8 +92,9 @@
  ],
  "enforce": {
   "DESKTOP-ESH4R6B": {
-   "note": "PC 3 - 176: tool 10 chi chay tren Laptop - 078",
+   "note": "PC 3 - 176: tool 10 va 10+ chi chay tren Laptop - 078",
    "stop": [
+    "fbpostgroup",
     "sendzalo"
    ]
   },
