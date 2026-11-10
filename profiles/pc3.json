@@ -62,13 +62,13 @@
   },
   {
    "id": "zalosender",
-   "name": "11 · Rep tin nhắn Zalo HR, sale · PC 3 - 176",
-   "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. CHỈ chạy trên PC 3 - 176",
+   "name": "11 · Rep tin nhắn Zalo HR, sale · Laptop - 078",
+   "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. CHỈ chạy trên Laptop - 078",
    "page": "n",
    "match": "Zalo Auto Sender|6-zalo-tool-master|zalo-auto-sender",
    "exclude": "--type=",
    "kind": "ondemand",
-   "start": "Mở app Zalo Auto Sender trên PC 3 - 176",
+   "start": "Mở app Zalo Auto Sender trên Laptop - 078",
    "path": ""
   },
   {

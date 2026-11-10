@@ -127,6 +127,21 @@ $sf=[Environment]::GetFolderPath('Startup'); Get-ChildItem $sf -File -EA Silentl
 $hk=Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run' -EA SilentlyContinue
 if($hk){ $hk.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' -and ("$($_.Name) $($_.Value)" -match $re) } | ForEach-Object { $done+="HKLM-can-Admin/$($_.Name)" } }
 $done -join ';'`;
+const STARTUP_ON_PS = String.raw`
+$sa='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved'; $on=[byte[]](2,0,0,0,0,0,0,0,0,0,0,0); $done=@(); $cmd=$null
+function On($sub,$name){ $k="$sa\$sub"; $cur=(Get-ItemProperty $k -EA SilentlyContinue).$name; if($cur -and $cur[0] -ne 2){ New-ItemProperty $k -Name $name -PropertyType Binary -Value $on -Force | Out-Null; $script:done+="bat-tu-khoi-dong:$sub/$name" } }
+$run=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -EA SilentlyContinue
+if($run){ $run.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' -and ("$($_.Name) $($_.Value)" -match $re) } | ForEach-Object { On 'Run' $_.Name; if(-not $cmd){ $cmd=$_.Value } } }
+$sf=[Environment]::GetFolderPath('Startup'); $lnk=Get-ChildItem $sf -File -EA SilentlyContinue | Where-Object { $_.Name -match $re }
+$lnk | ForEach-Object { On 'StartupFolder' $_.Name }
+$exe=$null
+foreach($d in @($dir, "$env:ProgramFiles\$name", ("" + [Environment]::GetEnvironmentVariable('ProgramFiles(x86)') + "\$name"), "$env:LOCALAPPDATA\Programs\$name")){ if($d -and (Test-Path $d)){ $exe=Get-ChildItem $d -Filter *.exe -EA SilentlyContinue | Where-Object { $_.Name -notmatch '(?i)unins|uninstall|update|elevate' } | Sort-Object { -not ($_.BaseName -match $re) } | Select-Object -First 1; if($exe){ break } } }
+if($exe){ Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName; $done+="mo:$($exe.FullName)" }
+elseif($lnk){ Invoke-Item ($lnk | Select-Object -First 1).FullName; $done+="mo:$(($lnk | Select-Object -First 1).Name)" }
+elseif($cmd){ Start-Process cmd.exe -ArgumentList '/c','start','""',$cmd -WindowStyle Hidden; $done+="mo:$cmd" }
+else { $done+="KHONG-TIM-THAY-APP" }
+$done -join ';'`;
+const startedAt = {};
 const enforcedAt = {};
 async function enforce(cfg) {
   const me = require("os").hostname().toLowerCase();
@@ -145,6 +160,19 @@ async function enforce(cfg) {
       await run("taskkill", ["/F", "/T", ...pids.flatMap(p => ["/PID", p])]);
       enfLog(`[${id}] đã tắt ${pids.length} tiến trình theo lệnh PC 1 (${t.name})`);
     }
+  }
+  const start = rule && rule[1] && Array.isArray(rule[1].start) ? rule[1].start : [];
+  for (const id of start) { // bật lại tool (lệnh PC 1): mở app nếu chưa chạy, tối đa 30 phút/lần
+    const t = cfg.tools.find(x => x.id === id); if (!t || !t.match) continue;
+    const re = new RegExp(t.match, "i");
+    if (procs.some(x => re.test(x.CommandLine) && !/ops-server\.js/.test(x.CommandLine))) continue;
+    if (startedAt[id] && Date.now() - startedAt[id] < 30 * 60000) continue;
+    startedAt[id] = Date.now();
+    const q = v => "'" + String(v || "").replace(/'/g, "''") + "'";
+    const name = (t.app || t.match).split("|")[0].replace(/\\/g, "");
+    const dir = t.path ? t.path.replace(/%([^%]+)%/g, (_, k) => process.env[k] || "") : "";
+    const o = (await ps("$re=" + q(t.match) + ";$name=" + q(name) + ";$dir=" + q(dir) + ";" + STARTUP_ON_PS)).trim();
+    enfLog(`[${id}] bật lại theo lệnh PC 1 (${t.name}): ${o}`);
   }
 }
 // ===== Tự cập nhật ops-server.js từ GitHub (chỉ máy phụ có profile.txt; PC 1 sửa tay) =====
