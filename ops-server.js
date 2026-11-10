@@ -198,11 +198,27 @@ async function enforceInstall(cfg, items) {
     const h = require("crypto").createHash("sha256").update(fs.readFileSync(file)).digest("hex");
     if (h.toLowerCase() !== it.sha256.toLowerCase()) { enfLog(`[${it.id}] cài đặt: SHA256 KHÔNG khớp, đã xoá file ${it.file}`); try { fs.unlinkSync(file); } catch (e) {} continue; }
     const exe = (await ps("$e=Get-ChildItem " + q(dir) + " -Filter *.exe -EA SilentlyContinue | Where-Object { $_.Name -notmatch '(?i)unins|uninstall|elevate' } | Select-Object -First 1; if($e){ $e.FullName }")).trim();
-    const script = "$ErrorActionPreference='Continue'; Get-Process | Where-Object { $_.Path -and $_.Path -like " + q(dir + "\\*") + " } | Stop-Process -Force; Start-Sleep 2; " +
-      "$p=Start-Process -FilePath " + q(file) + " -ArgumentList '/S','/allusers' -Verb RunAs -PassThru -Wait; " +
-      (exe ? "Start-Sleep 3; Start-Process -FilePath " + q(exe) + "; " : "") +
-      "Add-Content -LiteralPath " + q(ENF_LOG) + " -Encoding utf8 -Value ((Get-Date).ToString('o') + ' [" + it.id + "] cài đặt xong, mã thoát ' + $p.ExitCode)";
-    require("child_process").spawn("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", script], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    const lock = path.join(inbox, it.id + ".installing");
+    try { if (Date.now() - fs.statSync(lock).mtimeMs < 6 * 3600000) { enfLog(`[${it.id}] cài đặt: lần cài trước còn đang chờ (có thể chờ bấm Yes UAC), không mở thêm`); continue; } } catch (e) {}
+    // script .ps1 riêng, ghi nhật ký từng bước (biết kẹt ở đâu); xong thì xoá khoá
+    const L = m => "Add-Content -LiteralPath " + q(ENF_LOG) + " -Encoding utf8 -Value ((Get-Date).ToUniversalTime().ToString('o') + ' [" + it.id + "] cài đặt: ' + " + m + ")";
+    const ps1 = [
+      "$ErrorActionPreference='Continue'",
+      "try {",
+      "  $ps = @(Get-Process | Where-Object { $_.Path -and $_.Path -like " + q(dir + "\\*") + " })",
+      "  " + L("'bắt đầu, tắt ' + $ps.Count + ' tiến trình app'"),
+      "  foreach($x in $ps){ try { Stop-Process -Id $x.Id -Force -ErrorAction Stop } catch { " + L("'không tắt được pid ' + $x.Id + ': ' + $_.Exception.Message") + " } }",
+      "  Start-Sleep 2",
+      "  " + L("'mở trình cài (chờ bấm Yes UAC)'"),
+      "  $p = Start-Process -FilePath " + q(file) + " -ArgumentList '/S','/allusers' -Verb RunAs -PassThru -Wait -ErrorAction Stop",
+      "  " + L("'cài đặt xong, mã thoát ' + $p.ExitCode"),
+      exe ? "  Start-Sleep 3; Start-Process -FilePath " + q(exe) + "; " + L("'đã mở lại app'") : "",
+      "} catch { " + L("'LỖI: ' + $_.Exception.Message") + " }",
+      "Remove-Item -LiteralPath " + q(lock) + " -Force -ErrorAction SilentlyContinue",
+    ].join("\r\n");
+    const ps1File = path.join(inbox, "install-" + it.id + ".ps1");
+    fs.writeFileSync(ps1File, "﻿" + ps1, "utf8"); fs.writeFileSync(lock, new Date().toISOString());
+    require("child_process").spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps1File], { detached: true, stdio: "ignore", windowsHide: true }).unref();
     enfLog(`[${it.id}] cài đặt: SHA256 khớp, đang cài ${it.file} (${cur || "chưa cài"} → ${it.version}) — Windows sẽ hỏi quyền Admin (UAC), cần bấm Yes trên máy`);
   }
 }
