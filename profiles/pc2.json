@@ -14,8 +14,8 @@
   },
   {
    "id": "autofb",
-   "name": "5 · AutoFB bình luận",
-   "role": "Comment / reply hàng loạt trong nhóm Facebook theo từ khoá, nhiều tài khoản",
+   "name": "5 · AutoFB đăng bài + bình luận + trả lời khách",
+   "role": "Đăng bài vào nhóm FB, bình luận bài trong nhóm và trả lời bình luận khách theo từ khoá (kèm ảnh phòng thật từ Sari), nhiều tài khoản bằng cookie",
    "page": "n",
    "path": "",
    "match": "AutoFB",
