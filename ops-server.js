@@ -62,7 +62,7 @@ async function scanPeers(cfg) {
   for (const t of targets) {
     const d = t.online === false ? null : await getJson(t.url + "/status?local=1", 5000);
     const prev = peerData[t.key];
-    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, hw: d.hw || null, load: d.load || null, known: true };
+    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: aliasOf(cfg, d) || d.host || t.name, url: t.url, tools: d.tools, hw: d.hw || null, load: d.load || null, known: true };
     else if (prev && prev.known) peerData[t.key] = { ...prev, ok: false };   // từng kết nối, giờ mất
     else delete peerData[t.key];                                             // PC chưa cài Sari Ops: bỏ qua
   }
@@ -179,6 +179,11 @@ function status(t) {
   };
 }
 
+// Tên PC: ưu tiên theo tên Windows (hw.pc) để cài lại máy không lẫn tên; sau đó theo tên máy tự báo.
+function aliasOf(cfg, d) {
+  const al = cfg.alias || {}, keys = Object.keys(al), pick = v => { const k = v && keys.find(x => x.toLowerCase() === String(v).toLowerCase()); return k ? al[k] : null; };
+  return pick(d.hw && d.hw.pc) || pick(d.host);
+}
 const allowed = ip => { ip = String(ip || "").replace(/^::ffff:/, ""); if (ip === "127.0.0.1" || ip === "::1") return true;
   const m = ip.match(/^100\.(\d+)\./); if (m && +m[1] >= 64 && +m[1] <= 127) return true; // Tailscale 100.64.0.0/10
   return /^fd7a:115c:a1e0:/i.test(ip); };
@@ -191,7 +196,7 @@ const server = http.createServer((req, res) => {
     const cfg = loadCfg();
     const localOnly = /[?&]local=1/.test(req.url);
     let tools = cfg.tools.map(status);
-    const peers = [], hwOf = d => d.hw || (cfg.hwNote || {})[d.name] || null;
+    const peers = [], hwOf = d => { const n = (cfg.hwNote || {})[d.name]; return d.hw ? (n && n.label ? { ...d.hw, label: n.label } : d.hw) : (n && n.cpu ? n : null); };
     if (!localOnly) for (const d of Object.values(peerData)) {
       peers.push({ name: d.name, url: d.url, ok: d.ok, hw: hwOf(d), load: d.ok ? d.load || null : null });
       for (const pt of d.tools) {

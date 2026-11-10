@@ -4,7 +4,7 @@
  "tools": [
   {
    "id": "updateroom",
-   "name": "1 · Cập nhật sheet phòng trống (đàm) · PC chính",
+   "name": "1 · Cập nhật sheet phòng trống (đàm) · PC 1",
    "role": "ToolUpdateRoom: quét nguồn CĐT, cập nhật phòng trống, gửi báo cáo Telegram",
    "page": "n",
    "match": "continuous-watchdog\\.ps1|Thinh-ToolUpdateRoom\\\\ToolUpdateRoom|1-ToolUpdateRoom",
@@ -26,7 +26,7 @@
   },
   {
    "id": "aiagent",
-   "name": "3 · AI Agent cập nhật phòng · PC 3",
+   "name": "3 · AI Agent cập nhật phòng · PC 2",
    "role": "Đọc nhóm Zalo của CĐT, Gemini trích xuất phòng, cập nhật Google Sheet + database, báo cáo 12h và 22h",
    "page": "n",
    "match": "ToolUpdateAIAgent|RUN-AI-AGENT|3-ToolUpdateAIAgent",
@@ -127,7 +127,7 @@
   },
   {
    "id": "tool1",
-   "name": "1+ · Đẩy phòng Sari → web · PC chính",
+   "name": "1+ · Đẩy phòng Sari → web · PC 1",
    "role": "Tool 1+: đẩy phòng trống Sari lên web Thiên Khôi",
    "page": "n",
    "match": "sari_to_web\\.py|tool1-plus-up-bai-len-web|RequestDataToWeb",
