@@ -324,6 +324,11 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(body));
   }
+  if (url === "/enforcelog") { // 40 dòng cuối nhật ký enforce/cài đặt/tự cập nhật (chỉ mạng Tailscale/nội bộ)
+    let t = ""; try { t = fs.readFileSync(ENF_LOG, "utf8").split(/\r?\n/).filter(Boolean).slice(-40).join("\n"); } catch (e) {}
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+    return res.end(t);
+  }
   if (url === "/procs") {
     const seen = {};
     for (const x of procs) {
