@@ -117,7 +117,7 @@
   },
   {
    "id": "fbpostgroup",
-   "name": "10+ · Đăng bài lên nhóm FB",
+   "name": "10+ · Đăng phòng Sari lên nhóm FB · Laptop - 078",
    "role": "FbPostGroup: lấy phòng từ app Sari, ghép tin theo mẫu, đăng hàng loạt vào nhóm Facebook có hẹn giờ",
    "page": "n",
    "match": "FbPostGroup|Fb-POST-GROUP.node_modules.electron.dist.electron\\.exe|10-Plus-Dang-Bai|fb-post-group",
