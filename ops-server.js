@@ -18,6 +18,10 @@ const asArr = v => v == null ? [] : Array.isArray(v) ? v : [v];
 let procs = [], tasks = {}, git = {}, gh = {}, lastScan = 0, ghOk = null, peerData = {};
 const HOST = () => { const c = loadCfg(); if (c.machine) return c.machine; try { return fs.readFileSync(path.join(__dirname, "machine.txt"), "utf8").replace(/^﻿/, "").trim() || require("os").hostname(); } catch (e) { return require("os").hostname(); } };
 const TS = "C:/Program Files/Tailscale/tailscale.exe";
+// Cấu hình máy (đọc 1 lần): CPU, số luồng, RAM, tên Windows — để Phòng Vận hành biết tool chạy trên máy nào.
+const HW = (() => { const os = require("os"), c = os.cpus() || [];
+  const cpu = String((c[0] && c[0].model) || "").replace(/\((R|TM)\)/gi, "").replace(/ CPU /gi, " ").replace(/@.*$/, "").replace(/\s+/g, " ").trim();
+  return { cpu, threads: c.length, ramGB: Math.round(os.totalmem() / 2 ** 30), pc: os.hostname() }; })();
 let FB = null; try { FB = require("./fb-poster"); } catch (e) { if (e.code !== "MODULE_NOT_FOUND") console.error("fb-poster:", e.message); }
 function getJson(url, ms = 5000) {
   return new Promise(resolve => {
@@ -48,7 +52,7 @@ async function scanPeers(cfg) {
   for (const t of targets) {
     const d = t.online === false ? null : await getJson(t.url + "/status?local=1", 5000);
     const prev = peerData[t.key];
-    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, known: true };
+    if (d && Array.isArray(d.tools)) peerData[t.key] = { ok: true, name: (cfg.alias || {})[d.host] || d.host || t.name, url: t.url, tools: d.tools, hw: d.hw || null, known: true };
     else if (prev && prev.known) peerData[t.key] = { ...prev, ok: false };   // từng kết nối, giờ mất
     else delete peerData[t.key];                                             // PC chưa cài Sari Ops: bỏ qua
   }
@@ -156,7 +160,7 @@ function status(t) {
   if (loadCfg().onlyRunning && !running && !freshLog && t.kind !== "cloud") { state = "absent"; label = "Không chạy trên máy này"; }
   const starts = mine.map(x => x.Start).filter(Boolean).sort();
   return {
-    host: HOST(), id: t.id, name: t.name, role: t.role, page: t.page, repo: t.repo, kind: t.kind, start: t.start, path: p,
+    host: HOST(), hw: HW, id: t.id, name: t.name, role: t.role, page: t.page, repo: t.repo, kind: t.kind, start: t.start, path: p,
     state, label, running,
     activity: log ? log.last : running ? "Đang chạy (tool không ghi log)" : t.kind === "cloud" ? "Xem lịch chạy trong Apps Script" : !exists ? "Không thấy bản cài ở " + p : "—",
     since: starts[0] || null, pids: mine.map(x => x.ProcessId).slice(0, 8),
@@ -179,17 +183,17 @@ const server = http.createServer((req, res) => {
     let tools = cfg.tools.map(status);
     const peers = [];
     if (!localOnly) for (const d of Object.values(peerData)) {
-      peers.push({ name: d.name, url: d.url, ok: d.ok });
+      peers.push({ name: d.name, url: d.url, ok: d.ok, hw: d.hw || null });
       for (const pt of d.tools) {
         if (pt.state === "absent") continue;
         const i = tools.findIndex(t => t.id === pt.id);
-        const remote = d.ok ? { ...pt, host: d.name, gh: (i >= 0 && tools[i].gh) || pt.gh }
-          : { ...pt, host: d.name, state: "unknown", label: "Mất kết nối " + d.name, activity: "Máy theo dõi trên " + d.name + " không trả lời (PC tắt, mất mạng hoặc Tailscale chưa đăng nhập)", log: null };
+        const remote = d.ok ? { ...pt, host: d.name, hw: d.hw || pt.hw || null, gh: (i >= 0 && tools[i].gh) || pt.gh }
+          : { ...pt, host: d.name, hw: d.hw || pt.hw || null, state: "unknown", label: "Mất kết nối " + d.name, activity: "Máy theo dõi trên " + d.name + " không trả lời (PC tắt, mất mạng hoặc Tailscale chưa đăng nhập)", log: null };
         if (i < 0) tools.push(remote);
         else if (["absent", "off", "down", "unknown"].includes(tools[i].state) && (tools[i].state === "absent" || remote.state === "ok" || remote.state === "warn" || remote.state === "idle")) tools[i] = remote;
       }
     }
-    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), gh: ghOk, peers, error: cfg.error || null, tools };
+    const body = { at: new Date().toISOString(), scannedAt: lastScan ? new Date(lastScan).toISOString() : null, host: HOST(), hw: HW, gh: ghOk, peers, error: cfg.error || null, tools };
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(body));
   }
