@@ -181,14 +181,15 @@ const server = http.createServer((req, res) => {
     const cfg = loadCfg();
     const localOnly = /[?&]local=1/.test(req.url);
     let tools = cfg.tools.map(status);
-    const peers = [];
+    const peers = [], hwOf = d => d.hw || (cfg.hwNote || {})[d.name] || null;
     if (!localOnly) for (const d of Object.values(peerData)) {
-      peers.push({ name: d.name, url: d.url, ok: d.ok, hw: d.hw || null });
+      peers.push({ name: d.name, url: d.url, ok: d.ok, hw: hwOf(d) });
       for (const pt of d.tools) {
         if (pt.state === "absent") continue;
         const i = tools.findIndex(t => t.id === pt.id);
-        const remote = d.ok ? { ...pt, host: d.name, hw: d.hw || pt.hw || null, gh: (i >= 0 && tools[i].gh) || pt.gh }
-          : { ...pt, host: d.name, hw: d.hw || pt.hw || null, state: "unknown", label: "Mất kết nối " + d.name, activity: "Máy theo dõi trên " + d.name + " không trả lời (PC tắt, mất mạng hoặc Tailscale chưa đăng nhập)", log: null };
+        if (i >= 0) pt.name = tools[i].name; // tên do PC chính đặt, không chờ PC kia tải profile mới
+        const remote = d.ok ? { ...pt, host: d.name, hw: hwOf(d) || pt.hw || null, gh: (i >= 0 && tools[i].gh) || pt.gh }
+          : { ...pt, host: d.name, hw: hwOf(d) || pt.hw || null, state: "unknown", label: "Mất kết nối " + d.name, activity: "Máy theo dõi trên " + d.name + " không trả lời (PC tắt, mất mạng hoặc Tailscale chưa đăng nhập)", log: null };
         if (i < 0) tools.push(remote);
         else if (["absent", "off", "down", "unknown"].includes(tools[i].state) && (tools[i].state === "absent" || remote.state === "ok" || remote.state === "warn" || remote.state === "idle")) tools[i] = remote;
       }
