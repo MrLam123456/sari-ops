@@ -167,6 +167,8 @@ async function enforce(cfg) {
     const t = cfg.tools.find(x => x.id === id); if (!t || !t.match) continue;
     const re = new RegExp(t.match, "i");
     if (procs.some(x => re.test(x.CommandLine) && !/ops-server\.js/.test(x.CommandLine))) continue;
+    try { const lp = Number(fs.readFileSync(path.join(__dirname, "inbox", id + ".installing"), "utf8")); if (lp > 0) { process.kill(lp, 0); continue; } } catch (e) {} // đang cài thì không bật app (trình cài tự mở lại)
+    if (Date.now() - (installAt[id] || 0) < 3 * 60000) continue; // vừa gọi cài, danh sách tiến trình còn cũ
     if (startedAt[id] && Date.now() - startedAt[id] < 30 * 60000) continue;
     startedAt[id] = Date.now();
     const q = v => "'" + String(v || "").replace(/'/g, "''") + "'";
@@ -212,7 +214,7 @@ async function enforceInstall(cfg, items) {
       "  " + L("'mở trình cài (chờ bấm Yes UAC)'"),
       "  $p = Start-Process -FilePath " + q(file) + " -ArgumentList '/S','/allusers' -Verb RunAs -PassThru -Wait -ErrorAction Stop",
       "  " + L("'cài đặt xong, mã thoát ' + $p.ExitCode"),
-      exe ? "  Start-Sleep 3; Start-Process -FilePath " + q(exe) + "; " + L("'đã mở lại app'") : "",
+      exe ? "  Start-Sleep 3; Get-Process | Where-Object { $_.Path -and $_.Path -like " + q(dir + "\\*") + " } | Stop-Process -Force -EA SilentlyContinue; Start-Sleep 1; Start-Process -FilePath " + q(exe) + "; " + L("'đã mở lại app, bản trên máy: ' + (Get-Item " + q(exe) + ").VersionInfo.FileVersion") : "",
       "} catch { " + L("'LỖI: ' + $_.Exception.Message") + " }",
       "Remove-Item -LiteralPath " + q(lock) + " -Force -ErrorAction SilentlyContinue",
     ].join("\r\n");
