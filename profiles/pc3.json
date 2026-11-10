@@ -62,7 +62,7 @@
   },
   {
    "id": "zalosender",
-   "name": "6 · Zalo rep khách · PC 3 - 176",
+   "name": "11 · Rep tin nhắn Zalo HR, sale · PC 3 - 176",
    "role": "Tự trả lời khách Zalo bằng AI (ChatGPT/Gemini, kịch bản bán hàng riêng từng tài khoản) + gửi tin hàng loạt cá nhân/nhóm. CHỈ chạy trên PC 3 - 176",
    "page": "n",
    "match": "Zalo Auto Sender|6-zalo-tool-master|zalo-auto-sender",
