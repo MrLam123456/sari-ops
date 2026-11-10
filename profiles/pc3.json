@@ -4,7 +4,7 @@
  "tools": [
   {
    "id": "updateroom",
-   "name": "1 · Cập nhật sheet phòng trống (đàm)",
+   "name": "1 · Cập nhật sheet phòng trống (đàm) · PC chính",
    "role": "ToolUpdateRoom: quét nguồn CĐT, cập nhật phòng trống, gửi báo cáo Telegram",
    "page": "n",
    "match": "continuous-watchdog\\.ps1|Thinh-ToolUpdateRoom\\\\ToolUpdateRoom|1-ToolUpdateRoom",
