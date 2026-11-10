@@ -199,7 +199,7 @@ async function enforceInstall(cfg, items) {
     if (h.toLowerCase() !== it.sha256.toLowerCase()) { enfLog(`[${it.id}] cài đặt: SHA256 KHÔNG khớp, đã xoá file ${it.file}`); try { fs.unlinkSync(file); } catch (e) {} continue; }
     const exe = (await ps("$e=Get-ChildItem " + q(dir) + " -Filter *.exe -EA SilentlyContinue | Where-Object { $_.Name -notmatch '(?i)unins|uninstall|elevate' } | Select-Object -First 1; if($e){ $e.FullName }")).trim();
     const lock = path.join(inbox, it.id + ".installing");
-    try { if (Date.now() - fs.statSync(lock).mtimeMs < 6 * 3600000) { enfLog(`[${it.id}] cài đặt: lần cài trước còn đang chờ (có thể chờ bấm Yes UAC), không mở thêm`); continue; } } catch (e) {}
+    try { const lp = Number(fs.readFileSync(lock, "utf8")); if (lp > 0) { process.kill(lp, 0); enfLog(`[${it.id}] cài đặt: lần cài trước (pid ${lp}) còn đang chờ (có thể chờ bấm Yes UAC), không mở thêm`); continue; } } catch (e) {} // pid đã chết → cài lại
     // script .ps1 riêng, ghi nhật ký từng bước (biết kẹt ở đâu); xong thì xoá khoá
     const L = m => "Add-Content -LiteralPath " + q(ENF_LOG) + " -Encoding utf8 -Value ((Get-Date).ToUniversalTime().ToString('o') + ' [" + it.id + "] cài đặt: ' + " + m + ")";
     const ps1 = [
@@ -217,8 +217,14 @@ async function enforceInstall(cfg, items) {
       "Remove-Item -LiteralPath " + q(lock) + " -Force -ErrorAction SilentlyContinue",
     ].join("\r\n");
     const ps1File = path.join(inbox, "install-" + it.id + ".ps1");
-    fs.writeFileSync(ps1File, "﻿" + ps1, "utf8"); fs.writeFileSync(lock, new Date().toISOString());
-    require("child_process").spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps1File], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    fs.writeFileSync(ps1File, "﻿" + ps1, "utf8");
+    const outFile = path.join(inbox, "install-" + it.id + ".out.txt"), fd = fs.openSync(outFile, "w");
+    const ch = require("child_process").spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps1File], { detached: true, stdio: ["ignore", fd, fd], windowsHide: true });
+    fs.closeSync(fd); fs.writeFileSync(lock, String(ch.pid || 0));
+    const t0 = Date.now();
+    ch.on("error", e => enfLog(`[${it.id}] cài đặt: không mở được PowerShell: ${e.message}`));
+    ch.on("exit", code => { let o = ""; try { o = fs.readFileSync(outFile, "utf8").replace(/\s+/g, " ").trim().slice(0, 400); } catch (e) {} enfLog(`[${it.id}] cài đặt: PowerShell (pid ${ch.pid}) thoát mã ${code} sau ${Math.round((Date.now() - t0) / 1000)}s${o ? " — " + o : ""}`); });
+    ch.unref();
     enfLog(`[${it.id}] cài đặt: SHA256 khớp, đang cài ${it.file} (${cur || "chưa cài"} → ${it.version}) — Windows sẽ hỏi quyền Admin (UAC), cần bấm Yes trên máy`);
   }
 }
