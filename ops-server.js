@@ -28,10 +28,21 @@ function sampleLoad() {
   const os = require("os"); let idle = 0, total = 0;
   for (const x of os.cpus() || []) { for (const k in x.times) total += x.times[k]; idle += x.times.idle; }
   const tm = os.totalmem(), fm = os.freemem();
-  if (prevCpu && total > prevCpu.total) LOAD = { cpu: Math.round(100 * (1 - (idle - prevCpu.idle) / (total - prevCpu.total))), ram: Math.round(100 * (1 - fm / tm)), ramUsedGB: +((tm - fm) / 2 ** 30).toFixed(1), at: new Date().toISOString() };
+  if (prevCpu && total > prevCpu.total) LOAD = { cpu: Math.round(100 * (1 - (idle - prevCpu.idle) / (total - prevCpu.total))), ram: Math.round(100 * (1 - fm / tm)), ramUsedGB: +((tm - fm) / 2 ** 30).toFixed(1), disk: DISK, at: new Date().toISOString() };
   prevCpu = { idle, total };
 }
+// Ổ cứng (10 phút/lần): dung lượng từng ổ đĩa cứng + tình trạng sức khỏe ổ vật lý (SSD/HDD)
+let DISK = null;
+function sampleDisk() {
+  const cmd = "[Console]::OutputEncoding=[Text.Encoding]::UTF8; $v=@(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | ForEach-Object { [pscustomobject]@{ d=$_.DeviceID; size=[math]::Round($_.Size/1GB); free=[math]::Round($_.FreeSpace/1GB,1) } });" +
+    " $p=@(Get-PhysicalDisk -EA SilentlyContinue | ForEach-Object { [pscustomobject]@{ n=$_.FriendlyName; t=[string]$_.MediaType; h=[string]$_.HealthStatus; size=[math]::Round($_.Size/1GB) } });" +
+    " ConvertTo-Json -Compress -Depth 3 @{ vol=$v; phys=$p }";
+  require("child_process").execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", cmd], { windowsHide: true, encoding: "utf8", timeout: 60000 }, (e, o) => {
+    try { const j = JSON.parse(o); DISK = { vol: [].concat(j.vol || []), phys: [].concat(j.phys || []), at: new Date().toISOString() }; } catch (x) {}
+  });
+}
 sampleLoad(); setInterval(sampleLoad, 5000).unref();
+sampleDisk(); setInterval(sampleDisk, 10 * 60000).unref();
 let FB = null; try { FB = require("./fb-poster"); } catch (e) { if (e.code !== "MODULE_NOT_FOUND") console.error("fb-poster:", e.message); }
 function getJson(url, ms = 5000) {
   return new Promise(resolve => {
