@@ -182,6 +182,26 @@ if(Get-Process -Name 'UiPath.Executor' -EA SilentlyContinue){ $done+="robot-dang
 elseif($proc -and $robot){ Start-Process -FilePath $robot.FullName -ArgumentList 'execute','--process',$proc -WindowStyle Hidden; $done+="chay:$proc" }
 elseif(-not $robot){ $done+="KHONG-TIM-THAY-UiRobot.exe" } else { $done+="KHONG-BIET-KICH-BAN" }
 $done -join ';'`;
+// Dọn rác MỘT LẦN (enforce."<máy>".cleanup = "<mã đợt>"): chỉ các mục cố định dưới đây, không nhận đường dẫn tùy ý.
+// Thùng rác, Temp, cache pip/npm/electron, cache Chrome (giữ đăng nhập), CrashDumps. Không đụng Desktop/Downloads/Documents.
+const CLEAN_PS = String.raw`
+$ErrorActionPreference='SilentlyContinue'; $b=(Get-PSDrive C).Free; $L=$env:LOCALAPPDATA
+function Zap($p){ try { Remove-Item -LiteralPath $p -Recurse -Force -Confirm:$false -ErrorAction Stop } catch {} }
+Clear-RecycleBin -DriveLetter C -Force -Confirm:$false
+$old=(Get-Date).AddDays(-2); Get-ChildItem "$L\Temp" -Force | Where-Object { $_.Name -ne 'claude' -and $_.Name -notlike '_MEI*' -and $_.LastWriteTime -lt $old } | ForEach-Object { Zap $_.FullName }
+foreach($d in "$L\pip\cache","$L\npm-cache","$L\electron\Cache","$L\CrashDumps"){ Get-ChildItem $d -Force | ForEach-Object { Zap $_.FullName } }
+Get-ChildItem "$L\Google\Chrome\User Data" -Directory -Force | ForEach-Object { foreach($s in 'Cache','Code Cache','GPUCache','DawnGraphiteCache','DawnWebGPUCache'){ $p=Join-Path $_.FullName $s; if(Test-Path $p){ Get-ChildItem $p -Recurse -Force -File | ForEach-Object { Zap $_.FullName } } } }
+$a=(Get-PSDrive C).Free; "giai phong {0:N2} GB, con trong {1:N2} GB" -f (($a-$b)/1073741824),($a/1073741824)`;
+async function enforceCleanup(tag) {
+  if (!/^[\w-]{1,40}$/.test(tag)) return;
+  const mark = path.join(__dirname, "cleanup-" + tag + ".done");
+  if (fs.existsSync(mark)) return;
+  fs.writeFileSync(mark, new Date().toISOString());
+  enfLog(`dọn rác đợt ${tag}: bắt đầu`);
+  const o = (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" + CLEAN_PS], 600000)).trim();
+  enfLog(`dọn rác đợt ${tag}: ${o || "không có kết quả"}`);
+  BIG.at = 0; sampleDisk();
+}
 const startedAt = {};
 const enforcedAt = {};
 async function enforce(cfg) {
@@ -202,6 +222,7 @@ async function enforce(cfg) {
       enfLog(`[${id}] đã tắt ${pids.length} tiến trình theo lệnh PC 1 (${t.name})`);
     }
   }
+  if (rule && rule[1] && typeof rule[1].cleanup === "string") enforceCleanup(rule[1].cleanup).catch(e => enfLog("lỗi dọn rác: " + e.message));
   if (rule && rule[1] && Array.isArray(rule[1].install)) await enforceInstall(cfg, rule[1].install).catch(e => enfLog("lỗi cài đặt: " + e.message));
   const start = rule && rule[1] && Array.isArray(rule[1].start) ? rule[1].start : [];
   for (const id of start) { // bật lại tool (lệnh PC 1): mở app nếu chưa chạy, tối đa 30 phút/lần

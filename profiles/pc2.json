@@ -103,7 +103,8 @@
    ],
    "start": [
     "uipath"
-   ]
+   ],
+   "cleanup": "20261115-pc3"
   },
   "DESKTOP-U7GL1F6": {
    "note": "Laptop - 078: tool 11 chay tren may nay, cai ban 1.5.0 (Gemini + Quet FB)",
