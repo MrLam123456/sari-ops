@@ -15,6 +15,23 @@ const run = (file, args, timeout = 20000) => new Promise(r => execFile(file, arg
 const ps = cmd => run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" + cmd]);
 const asArr = v => v == null ? [] : Array.isArray(v) ? v : [v];
 
+// Báo cáo thư mục lớn (chỉ đọc) cho /bigdirs
+const BIG = { busy: false, at: 0, dirs: [] };
+const BIG_PS = `$ErrorActionPreference='SilentlyContinue'
+$c=@('C:\\Windows\\Temp','C:\\Windows\\SoftwareDistribution\\Download','C:\\Windows\\Installer','C:\\$Recycle.Bin','C:\\ProgramData\\Package Cache')
+foreach($u in Get-ChildItem C:\\Users -Directory -Force){ foreach($s in 'AppData\\Local\\Temp','Downloads','Desktop','Documents','Videos','Pictures','.cache','AppData\\Local\\Google\\Chrome\\User Data','AppData\\Local\\Microsoft\\Edge\\User Data','AppData\\Local\\npm-cache','AppData\\Local\\pip\\cache','AppData\\Local\\electron\\Cache','AppData\\Local\\CrashDumps','AppData\\Roaming\\ZaloData','AppData\\Local\\ZaloPC','AppData\\Local\\Programs'){ $c+=Join-Path $u.FullName $s } }
+function Sz($p){ $s=[long]0; $st=New-Object System.Collections.Stack; $st.Push([IO.DirectoryInfo]$p); while($st.Count){ $d=$st.Pop(); try{ foreach($f in $d.EnumerateFiles()){ $s+=$f.Length } }catch{}; try{ foreach($x in $d.EnumerateDirectories()){ if(-not ($x.Attributes -band [IO.FileAttributes]::ReparsePoint)){ $st.Push($x) } } }catch{} }; $s }
+$r=@(); foreach($p in ($c | Select-Object -Unique)){ $it=Get-Item -LiteralPath $p -Force; if($it -and -not ($it.Attributes -band [IO.FileAttributes]::ReparsePoint)){ $b=Sz $p; if($b -gt 50MB){ $r+=@{p=$p;gb=[math]::Round($b/1GB,2)} } } }
+foreach($f in 'C:\\pagefile.sys','C:\\hiberfil.sys','C:\\swapfile.sys'){ $i=Get-Item -LiteralPath $f -Force; if($i){ $r+=@{p=$f;gb=[math]::Round($i.Length/1GB,2)} } }
+ConvertTo-Json @($r) -Compress`;
+function sampleBig() {
+  BIG.busy = true;
+  run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" + BIG_PS], 300000).then(o => {
+    try { BIG.dirs = asArr(JSON.parse(o.trim() || "[]")).sort((a, b) => b.gb - a.gb); } catch (e) {}
+    BIG.at = Date.now(); BIG.busy = false;
+  });
+}
+
 let procs = [], tasks = {}, git = {}, gh = {}, lastScan = 0, ghOk = null, peerData = {};
 const HOST = () => { const c = loadCfg(); if (c.machine) return c.machine; try { return fs.readFileSync(path.join(__dirname, "machine.txt"), "utf8").replace(/^﻿/, "").trim() || require("os").hostname(); } catch (e) { return require("os").hostname(); } };
 const TS = "C:/Program Files/Tailscale/tailscale.exe";
@@ -363,6 +380,11 @@ const server = http.createServer((req, res) => {
     let t = ""; try { t = fs.readFileSync(ENF_LOG, "utf8").split(/\r?\n/).filter(Boolean).slice(-40).join("\n"); } catch (e) {}
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
     return res.end(t);
+  }
+  if (url === "/bigdirs") { // CHỈ ĐỌC: dung lượng các thư mục hay phình to trên ổ C (không xóa gì). Đo lại tối đa 10 phút/lần.
+    if (!BIG.busy && (!BIG.at || Date.now() - BIG.at > 10 * 60000)) sampleBig();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return res.end(JSON.stringify({ host: HOST(), busy: BIG.busy, at: BIG.at ? new Date(BIG.at).toISOString() : null, dirs: BIG.dirs }));
   }
   if (url === "/procs") {
     const seen = {};
