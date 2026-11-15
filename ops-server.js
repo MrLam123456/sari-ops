@@ -169,6 +169,19 @@ elseif($lnk){ Invoke-Item ($lnk | Select-Object -First 1).FullName; $done+="mo:$
 elseif($cmd){ Start-Process cmd.exe -ArgumentList '/c','start','""',$cmd -WindowStyle Hidden; $done+="mo:$cmd" }
 else { $done+="KHONG-TIM-THAY-APP" }
 $done -join ';'`;
+// Tool UiPath ("uipath": {"process": "<tên>"} trong tools.json): mở UiPath Assistant rồi chạy kịch bản.
+// Không ghi tên kịch bản -> chạy lại kịch bản chạy gần nhất (đọc processName trong nhật ký Execution của UiPath).
+const UIPATH_START_PS = String.raw`
+$done=@(); $roots=@('C:\Program Files\UiPathPlatform','C:\Program Files\UiPath','C:\Program Files (x86)\UiPath',"$env:LOCALAPPDATA\Programs\UiPath","$env:LOCALAPPDATA\UiPath")
+function Find($n){ foreach($r in $roots){ if(Test-Path $r){ $f=Get-ChildItem $r -Recurse -Filter $n -EA SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if($f){ return $f } } }; $null }
+$asst=Find 'UiPath.Assistant.exe'; $robot=Find 'UiRobot.exe'
+if($asst -and -not (Get-Process -Name 'UiPath.Assistant' -EA SilentlyContinue)){ Start-Process -FilePath $asst.FullName -WorkingDirectory $asst.DirectoryName; $done+="mo-assistant"; Start-Sleep 25 }
+if(-not $proc){ $lg=Get-ChildItem "$env:LOCALAPPDATA\UiPath\Logs" -Filter '*_Execution.log' -EA SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 5
+  foreach($l in $lg){ $m=Select-String -LiteralPath $l.FullName -Pattern '"processName":"([^"]+)"' -EA SilentlyContinue | Select-Object -Last 1; if($m){ $proc=$m.Matches[0].Groups[1].Value; $done+="kich-ban-gan-nhat:$proc"; break } } }
+if(Get-Process -Name 'UiPath.Executor' -EA SilentlyContinue){ $done+="robot-dang-chay" }
+elseif($proc -and $robot){ Start-Process -FilePath $robot.FullName -ArgumentList 'execute','--process',$proc -WindowStyle Hidden; $done+="chay:$proc" }
+elseif(-not $robot){ $done+="KHONG-TIM-THAY-UiRobot.exe" } else { $done+="KHONG-BIET-KICH-BAN" }
+$done -join ';'`;
 const startedAt = {};
 const enforcedAt = {};
 async function enforce(cfg) {
@@ -200,6 +213,11 @@ async function enforce(cfg) {
     if (startedAt[id] && Date.now() - startedAt[id] < 30 * 60000) continue;
     startedAt[id] = Date.now();
     const q = v => "'" + String(v || "").replace(/'/g, "''") + "'";
+    if (t.uipath) {
+      const o = (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8;$proc=" + q(t.uipath.process) + ";" + UIPATH_START_PS], 120000)).trim();
+      enfLog(`[${id}] bật lại UiPath (${t.name}): ${o || "không có kết quả"}`);
+      continue;
+    }
     const name = (t.app || t.match).split("|")[0].replace(/\\/g, "");
     const dir = t.path ? t.path.replace(/%([^%]+)%/g, (_, k) => process.env[k] || "") : "";
     const o = (await ps("$re=" + q(t.match) + ";$name=" + q(name) + ";$dir=" + q(dir) + ";" + STARTUP_ON_PS)).trim();

@@ -90,9 +90,12 @@
    "kind": "service",
    "match": "UiPath.Assistant|UiPath.Executor",
    "exclude": "--type=",
-   "start": "Máy mới: irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/tools/install-tool8.ps1 | iex — rồi mở UiPath Assistant trên PC 3 - 176 để chạy kịch bản booking",
+   "start": "Tự động: khi tool 8 dừng, máy tự mở UiPath Assistant và chạy lại kịch bản gần nhất (tối đa 30 phút/lần). Máy mới: irm https://raw.githubusercontent.com/MrLam123456/sari-ops/main/tools/install-tool8.ps1 | iex",
    "path": "",
-   "repo": "Sari-tool/8-Zalo-Booking-UiPath"
+   "repo": "Sari-tool/8-Zalo-Booking-UiPath",
+   "uipath": {
+    "process": ""
+   }
   },
   {
    "id": "fbscan",
