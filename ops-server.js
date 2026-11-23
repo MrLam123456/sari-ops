@@ -6,7 +6,7 @@ const http = require("http"), fs = require("fs"), path = require("path"), { exec
 const PORT = +process.env.SARI_OPS_PORT || 8787;
 const CFG = path.join(__dirname, "tools.json");
 const PAGE = path.join(process.env.USERPROFILE || "C:\\Users\\admin", "SariMarketing3D", "Phong Marketing Sari.html");
-const SCAN_MS = 15000;
+const SCAN_MS = 45000; // 15s → 45s: mỗi lần quét mở 2 PowerShell, quét dày làm CPU máy cao
 
 const env = s => String(s || "").replace(/%([A-Z_]+)%/gi, (_, k) => process.env[k] || "");
 const loadCfg = () => { try { return JSON.parse(fs.readFileSync(CFG, "utf8").replace(/^﻿/, "")); } catch (e) { return { tools: [], error: String(e.message) }; } };
